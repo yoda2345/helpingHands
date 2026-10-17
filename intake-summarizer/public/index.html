@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recuperative Care Eligibility Checker</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f6f2ff;
+    --text: #5b21b6;
+    --muted: #8a74b8;
+    --accent: #7c3aed;
+    --accent-2: #a855f7;
+    --border: #e3d9fb;
+    --error: #ff5a5a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    position: relative;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .bg-blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .bg-blob-1 {
+    width: 480px;
+    height: 480px;
+    background: var(--accent);
+    top: -140px;
+    left: -140px;
+  }
+
+  .bg-blob-2 {
+    width: 420px;
+    height: 420px;
+    background: var(--accent-2);
+    bottom: -120px;
+    right: -120px;
+  }
+
+  .layout {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    flex-shrink: 0;
+    width: 220px;
+    padding: 32px 20px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sidebar-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .sidebar-btn:hover {
+    background: rgba(124, 58, 237, 0.1);
+  }
+
+  .sidebar-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+  }
+
+  .main {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+  }
+
+  .container {
+    position: relative;
+    max-width: 760px;
+    margin: 48px auto;
+    padding: 48px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(124, 58, 237, 0.18);
+    overflow: hidden;
+  }
+
+  .container.container-wide {
+    max-width: 1200px;
+  }
+
+  .top-banner {
+    display: block;
+    width: calc(100% + 96px);
+    margin: -48px -48px 32px -48px;
+    object-fit: cover;
+    max-height: 180px;
+  }
+
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin: 0 0 40px;
+  }
+
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .dropzone:hover,
+  .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--bg-alt);
+  }
+
+  .dropzone input[type="file"] {
+    display: none;
+  }
+
+  .dropzone-icon {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+  }
+
+  .dropzone-text {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .dropzone-hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 6px;
+  }
+
+  .file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    display: inline-block;
+    margin-top: 24px;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+
+  .btn:hover:not(:disabled) { transform: translateY(-2px); }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .status {
+    margin-top: 24px;
+    display: none;
+  }
+
+  .status.visible { display: block; }
+
+  .status-label {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width 0.3s ease;
+  }
+
+  .error-box {
+    margin-top: 24px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--error);
+    background: rgba(255, 108, 108, 0.08);
+    color: var(--error);
+    display: none;
+  }
+
+  .error-box.visible { display: block; }
+
+  .result {
+    margin-top: 40px;
+    display: none;
+  }
+
+  .result.visible { display: block; }
+
+  .result-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .action-btn:hover {
+    border-color: var(--accent);
+  }
+
+  @media print {
+    .sidebar,
+    .bg-blob,
+    .no-print,
+    #upload-form,
+    .status,
+    .top-banner {
+      display: none !important;
+    }
+
+    body { background: #fff; }
+
+    .layout { display: block; }
+
+    .container {
+      box-shadow: none;
+      border: none;
+      background: #fff;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  .banner {
+    padding: 28px 32px;
+    border-radius: 16px;
+    border: 1px solid;
+    margin-bottom: 24px;
+  }
+
+  .banner.eligible {
+    background: rgba(66, 199, 125, 0.12);
+    border-color: #42c77d;
+  }
+
+  .banner.ineligible {
+    background: rgba(255, 90, 90, 0.12);
+    border-color: #ff5a5a;
+  }
+
+  .banner.needs_more_info {
+    background: rgba(255, 193, 86, 0.12);
+    border-color: #ffc156;
+  }
+
+  .banner-status {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  .banner.eligible .banner-status { color: #42c77d; }
+  .banner.ineligible .banner-status { color: #ff5a5a; }
+  .banner.needs_more_info .banner-status { color: #ffc156; }
+
+  .banner-summary {
+    color: var(--text);
+  }
+
+  .section {
+    margin-top: 28px;
+    padding: 24px;
+    border-radius: 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+  }
+
+  .section h3 {
+    margin: 0 0 16px;
+    font-size: 1rem;
+  }
+
+  .criterion {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .criterion:first-child { border-top: none; padding-top: 0; }
+
+  .status-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .status-badge.met { background: rgba(66, 199, 125, 0.18); color: #42c77d; }
+  .status-badge.not_met { background: rgba(255, 90, 90, 0.18); color: #ff5a5a; }
+  .status-badge.unknown { background: rgba(255, 193, 86, 0.18); color: #ffc156; }
+
+  .criterion-body strong {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .criterion-body span {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .section.disqualifying {
+    border-color: #ff5a5a;
+  }
+
+  .section.disqualifying h3 { color: #ff5a5a; }
+
+  .section ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .section li {
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .section li:last-child { margin-bottom: 0; }
+
+  .det-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .det-badge.eligible { background: rgba(66, 199, 125, 0.18); color: #42c77d; }
+  .det-badge.ineligible { background: rgba(255, 90, 90, 0.18); color: #ff5a5a; }
+  .det-badge.needs_more_info { background: rgba(255, 193, 86, 0.18); color: #ffc156; }
+
+  .history-filters {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .history-filters input,
+  .history-filters select {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+
+  .history-filters input {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .history-filters input:focus,
+  .history-filters select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+  }
+
+  .history-table th,
+  .history-table td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    vertical-align: top;
+  }
+
+  .history-table th {
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+  }
+
+  .history-table td:nth-child(4) {
+    width: 42%;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .history-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .review-actions {
+    display: flex;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .review-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-alt);
+    color: var(--text);
+    font-size: 0.8rem;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .review-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+
+  .review-btn:disabled {
+    cursor: default;
+  }
+
+  .review-btn.approve.active {
+    background: rgba(66, 199, 125, 0.18);
+    border-color: #42c77d;
+    color: #42c77d;
+  }
+
+  .review-btn.disapprove.active {
+    background: rgba(255, 90, 90, 0.18);
+    border-color: #ff5a5a;
+    color: #ff5a5a;
+  }
+
+  .review-note {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .history-empty {
+    margin-top: 24px;
+    padding: 32px;
+    text-align: center;
+    color: var(--muted);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+  }
+
+  .login-form {
+    max-width: 360px;
+  }
+
+  .field {
+    margin-bottom: 18px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .login-note {
+    margin-top: 20px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .login-note.visible { display: block; }
+
+  .summary-link {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .summary-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 24px;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+
+  .history-detail-meta {
+    color: var(--muted);
+    margin: 0 0 40px;
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">🏥 <span>Eligibility Checker</span></div>
+    <nav class="sidebar-nav">
+      <button type="button" class="sidebar-btn active" id="nav-checker">📝 New Check</button>
+      <button type="button" class="sidebar-btn" id="nav-history">🕑 History</button>
+      <button type="button" class="sidebar-btn" id="nav-login">🔐 Login</button>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+
+    <div class="container" id="checker-view">
+      <img class="top-banner" src="images/banner.png" alt="Illumination Health + Home - Recuperative Care with Illumination, a safe place to heal">
+      <h1>Recuperative Care Eligibility Checker</h1>
+      <p class="subtitle">Upload a patient intake/referral PDF to check eligibility against the recuperative care admission criteria.</p>
+
+      <form id="upload-form">
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept="application/pdf">
+          <div class="dropzone-icon">📄</div>
+          <div class="dropzone-text">Click to choose a PDF, or drag one here</div>
+          <div class="dropzone-hint">PDF only, up to 20 MB</div>
+          <div id="file-chip-container"></div>
+        </label>
+
+        <button type="submit" class="btn" id="submit-btn" disabled>Check eligibility</button>
+      </form>
+
+      <div class="status" id="status">
+        <div class="status-label">
+          <span>Reading the intake form and checking it against admission criteria…</span>
+          <span id="progress-percent">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="error-box" id="error-box"></div>
+
+      <div class="result" id="result"></div>
+    </div>
+
+    <div class="container container-wide" id="history-view" style="display: none;">
+      <h1>Check History</h1>
+      <p class="subtitle">Previously checked intake forms and their eligibility determinations.</p>
+
+      <div class="history-filters">
+        <input type="text" id="history-search" placeholder="Search by file name or summary…">
+        <select id="history-filter-determination">
+          <option value="">All determinations</option>
+          <option value="eligible">Eligible</option>
+          <option value="ineligible">Ineligible</option>
+          <option value="needs_more_info">Needs more information</option>
+        </select>
+      </div>
+
+      <div id="history-content"></div>
+    </div>
+
+    <div class="container container-wide" id="history-detail-view" style="display: none;">
+      <button type="button" class="btn-link" id="back-to-history">← Back to history</button>
+      <h1>Check Details</h1>
+      <p class="history-detail-meta" id="history-detail-meta"></p>
+      <div id="history-detail-content"></div>
+    </div>
+
+    <div class="container" id="login-view" style="display: none;">
+      <h1>Log In</h1>
+      <p class="subtitle">Sign in to the eligibility checker.</p>
+
+      <form class="login-form" id="login-form">
+        <div class="field">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" autocomplete="username" placeholder="your.name">
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn" id="login-submit-btn">Log in</button>
+      </form>
+
+      <div class="login-note" id="login-note">
+        This is a demo login screen — it isn't connected to a real account system yet.
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("file-input");
+  const fileChipContainer = document.getElementById("file-chip-container");
+  const form = document.getElementById("upload-form");
+  const submitBtn = document.getElementById("submit-btn");
+  const statusEl = document.getElementById("status");
+  const progressFill = document.getElementById("progress-fill");
+  const progressPercent = document.getElementById("progress-percent");
+  const errorBox = document.getElementById("error-box");
+  const resultEl = document.getElementById("result");
+
+  const navChecker = document.getElementById("nav-checker");
+  const navHistory = document.getElementById("nav-history");
+  const navLogin = document.getElementById("nav-login");
+  const checkerView = document.getElementById("checker-view");
+  const historyView = document.getElementById("history-view");
+  const historyDetailView = document.getElementById("history-detail-view");
+  const historyDetailMeta = document.getElementById("history-detail-meta");
+  const historyDetailContent = document.getElementById("history-detail-content");
+  const backToHistoryBtn = document.getElementById("back-to-history");
+  const loginView = document.getElementById("login-view");
+  const historyContent = document.getElementById("history-content");
+  const loginForm = document.getElementById("login-form");
+  const loginNote = document.getElementById("login-note");
+
+  const STATUS_LABELS = {
+    eligible: "✓ Eligible",
+    ineligible: "✗ Ineligible",
+    needs_more_info: "⚠ Needs more information",
+  };
+
+  const DET_LABELS = {
+    eligible: "Eligible",
+    ineligible: "Ineligible",
+    needs_more_info: "Needs info",
+  };
+
+  function el(tag, props, children) {
+    const node = document.createElement(tag);
+    if (props) {
+      for (const [key, value] of Object.entries(props)) {
+        if (key === "className") node.className = value;
+        else if (key === "text") node.textContent = value;
+        else node.setAttribute(key, value);
+      }
+    }
+    (children || []).forEach((child) => node.appendChild(child));
+    return node;
+  }
+
+  function renderResult(container, data) {
+    container.innerHTML = "";
+
+    const determination = ["eligible", "ineligible", "needs_more_info"].includes(data.determination)
+      ? data.determination
+      : "needs_more_info";
+
+    const printBtn = el("button", { type: "button", className: "action-btn", text: "🖨️ Print" });
+    printBtn.addEventListener("click", () => window.print());
+
+    const copyBtn = el("button", { type: "button", className: "action-btn", text: "📋 Copy summary" });
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(data.summary || "");
+        const original = copyBtn.textContent;
+        copyBtn.textContent = "✓ Copied";
+        setTimeout(() => { copyBtn.textContent = original; }, 1500);
+      } catch (_) {
+        copyBtn.textContent = "Copy failed";
+      }
+    });
+
+    container.appendChild(el("div", { className: "result-actions no-print" }, [printBtn, copyBtn]));
+
+    const banner = el("div", { className: `banner ${determination}` }, [
+      el("div", { className: "banner-status", text: STATUS_LABELS[determination] }),
+      el("div", { className: "banner-summary", text: data.summary || "" }),
+    ]);
+    container.appendChild(banner);
+
+    if (Array.isArray(data.criteria) && data.criteria.length > 0) {
+      const items = data.criteria.map((c) =>
+        el("div", { className: "criterion" }, [
+          el("span", { className: `status-badge ${["met", "not_met", "unknown"].includes(c.status) ? c.status : "unknown"}`, text: (c.status || "unknown").replace("_", " ") }),
+          el("div", { className: "criterion-body" }, [
+            el("strong", { text: c.name || "" }),
+            el("span", { text: c.explanation || "" }),
+          ]),
+        ])
+      );
+      container.appendChild(el("div", { className: "section" }, [
+        el("h3", { text: "Criteria" }),
+        ...items,
+      ]));
+    }
+
+    if (Array.isArray(data.disqualifying_factors) && data.disqualifying_factors.length > 0) {
+      const list = el("ul", {}, data.disqualifying_factors.map((f) => el("li", { text: f })));
+      container.appendChild(el("div", { className: "section disqualifying" }, [
+        el("h3", { text: "Disqualifying factors" }),
+        list,
+      ]));
+    }
+
+    if (Array.isArray(data.open_questions) && data.open_questions.length > 0) {
+      const list = el("ul", {}, data.open_questions.map((q) => el("li", { text: q })));
+      container.appendChild(el("div", { className: "section" }, [
+        el("h3", { text: "Open questions" }),
+        list,
+      ]));
+    }
+  }
+
+  function showView(view) {
+    checkerView.style.display = view === "checker" ? "block" : "none";
+    historyView.style.display = view === "history" ? "block" : "none";
+    historyDetailView.style.display = view === "history-detail" ? "block" : "none";
+    loginView.style.display = view === "login" ? "block" : "none";
+    navChecker.classList.toggle("active", view === "checker");
+    navHistory.classList.toggle("active", view === "history" || view === "history-detail");
+    navLogin.classList.toggle("active", view === "login");
+  }
+
+  function showHistoryDetail(item) {
+    historyDetailMeta.textContent = `${item.filename || ""} — ${new Date(item.timestamp).toLocaleString()}`;
+    if (item.result) {
+      renderResult(historyDetailContent, item.result);
+    } else {
+      historyDetailContent.innerHTML = "";
+      historyDetailContent.appendChild(
+        el("div", { className: "history-empty", text: "Full details aren't available for this older entry." })
+      );
+    }
+    showView("history-detail");
+  }
+
+  backToHistoryBtn.addEventListener("click", () => showView("history"));
+
+  async function submitReview(id, decision) {
+    const res = await fetch(`/api/history/${encodeURIComponent(id)}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to record review.");
+    }
+    return res.json();
+  }
+
+  function buildSummaryCell(item) {
+    const btn = el("button", {
+      type: "button",
+      className: "summary-link",
+      text: item.summary || "(no summary)",
+    });
+    btn.addEventListener("click", () => showHistoryDetail(item));
+    return btn;
+  }
+
+  function buildReviewCell(item) {
+    const approveBtn = el("button", {
+      type: "button",
+      className: `review-btn approve ${item.review === "approved" ? "active" : ""}`,
+      text: "👍 Approve",
+    });
+    const disapproveBtn = el("button", {
+      type: "button",
+      className: `review-btn disapprove ${item.review === "disapproved" ? "active" : ""}`,
+      text: "👎 Disapprove",
+    });
+    const note = el("div", {
+      className: "review-note",
+      text: item.reviewedAt ? `Reviewed ${new Date(item.reviewedAt).toLocaleString()}` : "",
+    });
+
+    const handleClick = async (decision) => {
+      approveBtn.disabled = true;
+      disapproveBtn.disabled = true;
+      try {
+        const { entry } = await submitReview(item.id, decision);
+        item.review = entry.review;
+        item.reviewedAt = entry.reviewedAt;
+        approveBtn.classList.toggle("active", entry.review === "approved");
+        disapproveBtn.classList.toggle("active", entry.review === "disapproved");
+        note.textContent = `Reviewed ${new Date(entry.reviewedAt).toLocaleString()}`;
+      } catch (err) {
+        note.textContent = err.message;
+      } finally {
+        approveBtn.disabled = false;
+        disapproveBtn.disabled = false;
+      }
+    };
+
+    approveBtn.addEventListener("click", () => handleClick("approved"));
+    disapproveBtn.addEventListener("click", () => handleClick("disapproved"));
+
+    return el("div", {}, [
+      el("div", { className: "review-actions" }, [approveBtn, disapproveBtn]),
+      note,
+    ]);
+  }
+
+  const historySearchInput = document.getElementById("history-search");
+  const historyFilterSelect = document.getElementById("history-filter-determination");
+  let allHistoryItems = [];
+
+  function renderHistoryTable() {
+    historyContent.innerHTML = "";
+
+    const query = historySearchInput.value.trim().toLowerCase();
+    const determinationFilter = historyFilterSelect.value;
+
+    const items = allHistoryItems.filter((item) => {
+      const matchesQuery =
+        !query ||
+        (item.filename || "").toLowerCase().includes(query) ||
+        (item.summary || "").toLowerCase().includes(query);
+      const matchesDetermination = !determinationFilter || item.determination === determinationFilter;
+      return matchesQuery && matchesDetermination;
+    });
+
+    if (allHistoryItems.length === 0) {
+      historyContent.appendChild(
+        el("div", { className: "history-empty", text: "No checks yet. Run a check to see it appear here." })
+      );
+      return;
+    }
+
+    if (items.length === 0) {
+      historyContent.appendChild(
+        el("div", { className: "history-empty", text: "No checks match your search/filter." })
+      );
+      return;
+    }
+
+    const rows = items.map((item) => {
+      const determination = ["eligible", "ineligible", "needs_more_info"].includes(item.determination)
+        ? item.determination
+        : "needs_more_info";
+      return el("tr", {}, [
+        el("td", { text: new Date(item.timestamp).toLocaleString() }),
+        el("td", { text: item.filename || "" }),
+        el("td", {}, [
+          el("span", { className: `det-badge ${determination}`, text: DET_LABELS[determination] }),
+        ]),
+        el("td", {}, [buildSummaryCell(item)]),
+        el("td", {}, [buildReviewCell(item)]),
+      ]);
+    });
+
+    const table = el("table", { className: "history-table" }, [
+      el("thead", {}, [
+        el("tr", {}, [
+          el("th", { text: "Date" }),
+          el("th", { text: "File" }),
+          el("th", { text: "Determination" }),
+          el("th", { text: "Summary" }),
+          el("th", { text: "Review" }),
+        ]),
+      ]),
+      el("tbody", {}, rows),
+    ]);
+
+    historyContent.appendChild(table);
+  }
+
+  historySearchInput.addEventListener("input", renderHistoryTable);
+  historyFilterSelect.addEventListener("change", renderHistoryTable);
+
+  async function loadHistory() {
+    historyContent.innerHTML = "";
+    historyContent.appendChild(el("div", { className: "history-empty", text: "Loading…" }));
+
+    try {
+      const res = await fetch("/api/history");
+      const data = await res.json();
+      allHistoryItems = Array.isArray(data.history) ? data.history : [];
+      renderHistoryTable();
+    } catch (err) {
+      historyContent.innerHTML = "";
+      historyContent.appendChild(el("div", { className: "history-empty", text: "Failed to load history." }));
+    }
+  }
+
+  navChecker.addEventListener("click", () => showView("checker"));
+  navHistory.addEventListener("click", () => {
+    showView("history");
+    loadHistory();
+  });
+  navLogin.addEventListener("click", () => {
+    showView("login");
+    loginNote.classList.remove("visible");
+  });
+
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    loginNote.classList.add("visible");
+  });
+
+  function setSelectedFile(file) {
+    fileChipContainer.innerHTML = "";
+    if (file) {
+      const chip = document.createElement("div");
+      chip.className = "file-chip";
+      chip.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+      fileChipContainer.appendChild(chip);
+      submitBtn.disabled = false;
+    } else {
+      submitBtn.disabled = true;
+    }
+  }
+
+  fileInput.addEventListener("change", () => {
+    setSelectedFile(fileInput.files[0] || null);
+  });
+
+  ["dragover", "dragenter"].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+  });
+
+  ["dragleave", "drop"].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+    });
+  });
+
+  dropzone.addEventListener("drop", (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      fileInput.files = e.dataTransfer.files;
+      setSelectedFile(file);
+    }
+  });
+
+  function setProgress(percent) {
+    const clamped = Math.max(0, Math.min(100, percent));
+    progressFill.style.width = `${clamped}%`;
+    progressPercent.textContent = `${clamped}%`;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    errorBox.classList.remove("visible");
+    resultEl.classList.remove("visible");
+    setProgress(0);
+    statusEl.classList.add("visible");
+    submitBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/summarize", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        let message = "Something went wrong.";
+        try {
+          const data = await res.json();
+          message = data.error || message;
+        } catch (_) {}
+        throw new Error(message);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalResult = null;
+      let streamError = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let sepIndex;
+        while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
+          const rawEvent = buffer.slice(0, sepIndex);
+          buffer = buffer.slice(sepIndex + 2);
+
+          const line = rawEvent.split("\n").find((l) => l.startsWith("data: "));
+          if (!line) continue;
+
+          const payload = JSON.parse(line.slice(6));
+          if (payload.type === "progress") {
+            setProgress(payload.percent);
+          } else if (payload.type === "done") {
+            finalResult = payload.result;
+          } else if (payload.type === "error") {
+            streamError = payload.error;
+          }
+        }
+      }
+
+      if (streamError) {
+        throw new Error(streamError);
+      }
+      if (!finalResult) {
+        throw new Error("The server closed the connection before finishing.");
+      }
+
+      renderResult(resultEl, finalResult);
+      resultEl.classList.add("visible");
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.classList.add("visible");
+    } finally {
+      statusEl.classList.remove("visible");
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>

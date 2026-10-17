@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Project Name</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --bg-alt: #11141b;
+    --text: #e8eaf0;
+    --muted: #9aa1b2;
+    --accent: #6c8cff;
+    --accent-2: #9b6cff;
+    --border: #232733;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    position: relative;
+    margin: 0;
+    overflow-x: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .bg-blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .bg-blob-1 {
+    width: 480px;
+    height: 480px;
+    background: var(--accent);
+    top: -140px;
+    left: -140px;
+  }
+
+  .bg-blob-2 {
+    width: 420px;
+    height: 420px;
+    background: var(--accent-2);
+    bottom: -120px;
+    right: -120px;
+  }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    background: rgba(11, 13, 18, 0.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+  }
+
+  .logo {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); opacity: 0.92; }
+
+  .btn-ghost {
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); }
+
+  .hero {
+    padding: 120px 0 90px;
+    text-align: center;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin: 0 0 20px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.15rem;
+    max-width: 600px;
+    margin: 0 auto 36px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  section {
+    position: relative;
+    padding: 80px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  section::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-radius: 2px;
+  }
+
+  .section-head {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .section-head h2 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+  }
+
+  .section-head p {
+    color: var(--muted);
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+  }
+
+  .card {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 28px rgba(108, 140, 255, 0.18);
+  }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .card h3 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+  }
+
+  .card p {
+    color: var(--muted);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .cta {
+    text-align: center;
+    background-image: linear-gradient(var(--bg-alt), var(--bg-alt)),
+      linear-gradient(135deg, var(--accent), var(--accent-2));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    padding: 64px 32px;
+  }
+
+  .cta h2 {
+    margin: 0 0 12px;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  .cta p {
+    color: var(--muted);
+    margin: 0 0 28px;
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+
+<header>
+  <div class="container">
+    <nav>
+      <div class="logo">Your Project</div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#get-started">Get Started</a></li>
+      </ul>
+      <a href="#get-started" class="btn btn-primary">Get Started</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">🚀 Now in beta</span>
+    <h1>Build something <span>people actually want</span></h1>
+    <p class="subtitle">
+      A short, punchy description of what your project does and who it's for.
+      Replace this with your real pitch.
+    </p>
+    <div class="hero-actions">
+      <a href="#get-started" class="btn btn-primary">Try it free</a>
+      <a href="#about" class="btn btn-ghost">Learn more</a>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <h2>Why it matters</h2>
+      <p>Three reasons your project stands out from the alternatives.</p>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <h3>Fast</h3>
+        <p>Describe the speed or efficiency benefit of your project here.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <h3>Secure</h3>
+        <p>Describe the trust, safety, or reliability angle here.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧩</div>
+        <h3>Simple</h3>
+        <p>Describe how easy it is to adopt or integrate here.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="container">
+    <div class="section-head">
+      <h2>About the project</h2>
+      <p>A couple sentences on the story, motivation, or team behind this.</p>
+    </div>
+  </div>
+</section>
+
+<section id="get-started">
+  <div class="container">
+    <div class="cta">
+      <h2>Ready to dive in?</h2>
+      <p>Add a sign-up form, waitlist, or download link here.</p>
+      <a href="#" class="btn btn-primary">Get Started</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    &copy; 2026 Your Project. All rights reserved.
+  </div>
+</footer>
+
+</body>
+</html>
